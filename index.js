@@ -1,97 +1,68 @@
-require("dotenv").config;
+require("dotenv").config(); // Ensure this is called as a function
 const express = require("express");
-
 const morgan = require("morgan");
+const cors = require("cors"); // Uncomment this to use CORS
+
 const app = express();
-//const cors = require('cors')
+const PORT = process.env.PORT || 10000; // Move PORT declaration to the top
 
-app.use(express.json());
-console.log("check01");
+// Middleware
+app.use(cors()); // Enable CORS for all routes
+app.use(express.json()); // Middleware to parse JSON bodies
+
 // Morgan 'tiny' logger for all requests
+app.use(morgan("tiny")); // Use morgan logging middleware for requests
 
-// Morgan combined format only for error responses (status codes 400 and above)
-const customMorgan = (tokens, req, res) => {
-  const { name, number } = req.body;
-  return [
-    `Server running on port ${PORT}`,
-    [
-      `${tokens.method(req, res)}`,
-      `${tokens.url(req, res)}`,
-      `${tokens.status(req, res)}`,
-      `${tokens.res(req, res, "content-length")}`,
-      `${tokens["response-time"](req, res)} ms`,
-      `{"name":"${name}", "number":"${number}"}`,
-    ].join(" "), // Join the rest with a comma
-  ].join("\n"); // Join the port line and the details line with a newline
-};
-
+// Sample notes data
 let notes = [
-    {
-        id: 1,
-        content: 'HTML is easy',
-        important: true
-      },
-      {
-        id: 2,
-        content: 'Browser can execute only JavaScript',
-        important: false
-      },
-      {
-        id: 3,
-        content: 'GET and POST are the most important methods of HTTP protocol',
-        important: true
-      }
+  { id: 1, content: 'HTML is easy', important: true },
+  { id: 2, content: 'Browser can execute only JavaScript', important: false },
+  { id: 3, content: 'GET and POST are the most important methods of HTTP protocol', important: true }
 ];
-//========== Middleware =========
 
-//app.use(cors())
-//=========== Routes =========
-//============ get ==============
+// Get all notes
 app.get("/api/notes", (req, res) => {
   res.json(notes);
 });
 
-const arrlength = () => {
-  return notes.length;
-};
-// ============= get info ==============
+// Get info about notes
 app.get("/api/info", (req, res) => {
-  res.send(`notes has note for ${arrlength()} people <br/><br/>
-    ${new Date()}.`);
+  res.send(`Notes has info for ${notes.length} notes <br/><br/>${new Date()}.`);
 });
-// ============= get with id ============
+
+// Get note by ID
 app.get("/api/notes/:id", (req, res) => {
-  const id =  Number(req.params.id);
-  const note = notes.find((note) => note.id === id);
+  const id = Number(req.params.id);
+  const note = notes.find(note => note.id === id);
   if (note) {
     res.json(note);
   } else {
-    res.status(404).json({ error: "No Such thing!!!" });
+    res.status(404).json({ error: "No such note!" });
   }
 });
-// ============= delete with id ============
+
+// Delete note by ID
 app.delete("/api/notes/:id", (req, res) => {
-  const id = req.params.id;
-  notes = notes.filter((note) => note.id !== id);
+  const id = Number(req.params.id); // Ensure ID is a number
+  notes = notes.filter(note => note.id !== id);
   res.status(204).end();
 });
 
-// ============= generate Id function ============
+// Generate a new ID
 const generateId = () => {
-  const maxId = notes.length > 0 ? Math.max(...notes.map((p) => p.id)) : 0;
+  const maxId = notes.length > 0 ? Math.max(...notes.map(note => note.id)) : 0;
   return maxId + 1;
 };
-//app.use(morgan(customMorgan));
-// ============= post ============
 
+// Create a new note
 app.post("/api/notes", (req, res) => {
   const { content, important } = req.body;
 
-  if (!content || !important) {
-    return res.status(400).json({ error: "note and  important are required!" });
+  if (content === undefined || important === undefined) {
+    return res.status(400).json({ error: "Content and importance are required!" });
   }
-  if (notes.find((note) => note.content === content)) {
-    return res.status(400).json({ error: "content must be unique!" });
+  if (notes.find(note => note.content === content)) {
+    return res.status(400).json({ error: "Content must be unique!" });
   }
 
   const newNote = {
@@ -102,10 +73,8 @@ app.post("/api/notes", (req, res) => {
   notes.push(newNote);
   res.status(201).json(newNote);
 });
-//========================================
 
-// ============= PORT & listen ============
-const PORT = process.env.PORT || 10000;
+// Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
