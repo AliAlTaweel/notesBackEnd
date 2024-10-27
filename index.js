@@ -1,12 +1,27 @@
 require("dotenv").config(); // Ensure this is called as a function
 const express = require("express");
+const mongoose = require("mongoose");
 const morgan = require("morgan");
 const cors = require("cors"); // Uncomment this to use CORS
 const port = process.env.VITE_PORT || 10000;
 const app = express();
 const PORT = port; // Move PORT declaration to the top
 app.use(express.static("dist"));
+const password = process.argv[2];
 
+const notee = process.argv[3];
+const importance = process.argv[4] === "true";
+const url = process.env.MONGODB_URI;
+
+mongoose.set("strictQuery", false);
+
+mongoose.connect(url);
+const noteSchema = new mongoose.Schema({
+  content: String,
+  important: Boolean,
+});
+
+const Note = mongoose.model("Note", noteSchema);
 // Middleware
 app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // Middleware to parse JSON bodies
@@ -27,7 +42,11 @@ let notes = [
 
 // Get all notes
 app.get("/api/notes", (req, res) => {
-  res.json(notes);
+  Note.find({}).then(notes => {
+    res.json(notes);
+  }).catch((error) => {
+    res.status(500).json({ error: "Could not retrieve notes" });
+  });
 });
 
 // Get info about notes
