@@ -47,8 +47,14 @@ app.get('/api/notes/:id', (req, res) => {
 
 // Delete note by ID
 app.delete('/api/notes/:id', (req, res) => {
-  Note.findByIdAndRemove(req.params.id)
-    .then(() => res.status(204).end())
+  Note.findByIdAndDelete(req.params.id)
+    .then((result)=> {
+      if(result){
+        res.status(204).end();
+      }else {
+        res.status(404).json({error:'Note not found'});
+      }
+    })
     .catch((error) => res.status(400).json({ error: 'Malformatted ID' }));
 });
 
